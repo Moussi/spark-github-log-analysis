@@ -16,13 +16,15 @@ object App {
       .master("local[*]")
       .getOrCreate()
 
-    val inputPath = "/media/moussi/Data1/0.Training/BigData/Manip/github-archive-sia/2015-03-01-0.json"
+    val inputJsonPath = "/media/moussi/Data1/0.Training/BigData/Manip/github-archive-sia/2015-03-01-0.json"
+    val inputCsvPath = "/media/moussi/Data1/0.Training/BigData/Manip/mock_data.csv"
     /**
       * spark read json function is used to map json like files
       * The json method returns a DataFrame, which has many of the standard RDD methods
       * you used before, like filter, map, flatMap, collect, count, and so on
       */
-    val ghLog = spark.read.json(inputPath)
+    println("Load json file")
+    val ghLog = spark.read.json(inputJsonPath)
     val eventsLog = ghLog.filter("type='PushEvent'")
     val groupedEvents = eventsLog.groupBy("actor.login").count
     println(s"all Log = ${ghLog.count}")
@@ -30,5 +32,14 @@ object App {
     println(s"grouped Events = ${eventsLog.count}")
     eventsLog.show(2)
     groupedEvents.show(5)
+    println("Load csv file")
+    val csvRows = spark.read.csv(inputCsvPath)
+    val femaleRows = csvRows.filter("_c4 = 'Female'")
+    val genderGroupedBy = csvRows.groupBy("_c4").count()
+    println(s"all csv rows = ${csvRows.count}")
+    println(s"all csv rows = ${femaleRows.count}")
+    csvRows.show(5)
+    femaleRows.show(5)
+    genderGroupedBy.show(5)
   }
 }
