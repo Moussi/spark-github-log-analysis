@@ -19,6 +19,8 @@ object App {
     val inputPath = "/media/moussi/Data1/0.Training/BigData/Manip/github-archive-sia/2015-03-01-0.json"
     /**
       * spark read json function is used to map json like files
+      * The json method returns a DataFrame, which has many of the standard RDD methods
+      * you used before, like filter, map, flatMap, collect, count, and so on
       */
     val ghLog = spark.read.json(inputPath)
     val eventsLog = ghLog.filter("type='PushEvent'")
