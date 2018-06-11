@@ -1,22 +1,20 @@
-package com.moussi.sparkSessionApp0
+package com.moussi.app0
 
 /**
   * Created by moussi on 09/06/18.
   */
-import org.apache.spark.sql.SparkSession
 
-object App {
+import com.moussi.SparkUtils._
+
+object FileLoaderApp {
   def main(args : Array[String]) {
     /**
       * Since Spark 2.0, both contexts sparkContext and SqlContext
       * are merged into a single class: SparkSession
       */
-    val spark = SparkSession.builder()
-      .appName("GitHub push counter")
-      .master("local[*]")
-      .getOrCreate()
+    val spark = sparkSession("GitHub push counter");
 
-    val inputJsonPath = "/media/moussi/Data1/0.Training/BigData/Manip/github-archive-sia/2015-03-01-0.json"
+    val inputJsonPath = "/media/moussi/Data1/0.Training/BigData/Manip/github-archive-sia/*.json"
     val inputCsvPath = "/media/moussi/Data1/0.Training/BigData/Manip/mock_data.csv"
     /**
       * spark read json function is used to map json like files
