@@ -98,3 +98,76 @@ parameter `spark.default.parallelism`.
 If that parameter isn’t specified by the user, it will be set to the number of cores in the cluster
 
 ### RangePartitioner
+
+RangePartitioner partitions data of sorted RDDs into roughly equal ranges. It samples the contents of  
+the RDD passed to it and determines the range boundaries according to the sampled data.
+
+### Custom Partitioner
+
+Pair RDDs can be partitioned with custom partitioners when it’s important to be precise about the placement  
+of data among partitions (and among tasks working on them). You may want to use a custom partitioner,  
+for example, if it’s important that each task processes only a specific subset of key-value pairs,  
+where all of them belong to a single database, single database table, single user, or something similar.
+
+Custom partitioners can be used only on pair RDDs, by passing them to pair RDD transformations.   
+Most pair RDD transformations have two additional overloaded methods: one that takes an additional  
+Int argument (the desired number of partitions) and another that takes an additional argument of the  
+(custom) Partitioner type.  
+The method that takes the number of partitions uses the default Hash-Partitioner.  
+For example, these two lines of code are equal, because they both apply HashPartitioner with 100 partitions:
+
+```
+rdd.foldByKey(afunction, 100)
+rdd.foldByKey(afunction, new HashPartitioner(100))
+```
+
+## Shuffling
+
+Physical movement of data between partitions is called shuffling. It occurs when data from multiple  
+partitions needs to be combined in order to build partitions for a new RDD.  
+When grouping elements by key, for example, Spark needs to examine all of the RDD’s partitions, find  
+elements with the same key, and then physically group them, thus forming new partitions.
+
+Tasks that immediately precede and follow the shuffle are called map and reduce tasks, respectively.  
+The results of map tasks are written to intermediate files (often to the OS’s filesystem cache only)  
+and read by reduce tasks. In addition to being written to disk, the data is sent over the network,  
+so it’s important to try to minimize the number of shuffles during Spark jobs. 
+
+```
+TIP
+Because changing the partitioner provokes shuffles, the safest approach, performance-wise, is to use  
+a default partitioner as much as possible and avoid inadvertently causing a shuffle.
+```
+
+* Shuffling when explicitly changing partitioners: Shuffling also occurs if a different HashPartitioner  
+than the previous one is used. Two HashPartitioners are the same if they have the same number of partitions. 
+* Shuffling always occurs when using a custom partitioner in methods that allow you to do that (most pair RDD transformations).  
+* Shuffle caused by partitioner removal: Sometimes a transformation causes a shuffle, although we  
+were using the default partitioner. `map` and `flatMap` transformations remove the RDD’s partitioner,  
+which doesn’t cause a shuffle. Here’s a complete list of transformations that cause a shuffle after  
+`map` or `flatMap` transformations:  
+- Pair RDD transformations that can change the RDD’s partitioner: `aggregateByKey`, `foldByKey`, `reduceByKey`,  
+`groupByKey`, `join`, `leftOuterJoin`, `rightOuterJoin`, `fullOuterJoin`, and `subtractByKey`
+
+```
+External shuffle service
+An external shuffle service is meant to optimize the exchange of shuffle data by providing a single  
+point from which executors can read intermediate shuffle files.  
+If an external shuffle service is enabled (by setting `spark.shuffle.service.enabled` to true),  
+one external shuffle server is started per worker node.
+```
+
+Spark has two shuffle implementations: **sort-based** and **hash-based**.  
+You can define which shuffle implementation to use by setting the value of the `spark.shuffle.manager`  
+parameter to either `hash` or `sort`.
+
+**Shuffling Parameters**: 
+* `spark.shuffle.spill` parameter specifies whether the amount of memory used for these tasks should be  
+limited (the default is true)  
+* The memory limit is specified by the `spark.shuffle.memoryFraction` parameter (the default is 0.2).  
+* `spark.shuffle.spill.compress` parameter tells Spark whether to use compression for the spilled  
+data (the default is again true).
+* `spark.shuffle.compress` specifies whether to compress intermediate files (the default is true).  
+* `spark.shuffle.spill.batchSize` specifies the number of objects that will be serialized or deserialized together when spilling to disk. The default is 10,000.  
+* `spark.shuffle.service.port` specifies the port the server will listen on if an external shuffle service is enabled.  
+
