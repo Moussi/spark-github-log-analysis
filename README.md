@@ -43,3 +43,58 @@ collection, a new key-value pair is created for the corresponding key. If the tr
 returns an empty list for one of the values, the resulting pair RDD will have one fewer element.  
 If the transformation function returns a list with two elements for one of the values, the resulting  
 pair RDD will have one more element. Note that the mapped values can be of a different type than before.
+
+## reduceByKey
+
+reduceByKey lets you merge all the values of a key into a single value of the same type.  
+The merge function you pass to it merges two values at a time until there is only one value left.  
+The function should be associative; otherwise you won’t get the same result every time you perform  
+the reduceByKey transformation on the same RDD.
+
+## foldByKey
+
+foldByKey does the same thing as reduceByKey, except that it requires an additional parameter, zeroValue,  
+in an extra parameter list that comes before the one with the reduce function.
+
+zeroValue should be a neutral value (0 for addition, 1 for multiplication, Nil for lists, and so forth).  
+It’s applied on the first value of a key (using the input function), and the result is applied on the  
+second value. You should be careful here, because, unlike in the foldLeft and foldRight methods in Scala,  
+zeroValue may be applied multiple times. This happens because of RDD’s parallel nature.
+
+## aggregateByKey
+
+aggregateByKey is similar to foldByKey and reduceByKey in that it merges values and takes a zero value,  
+but it also transforms values to another type. In addition to the zeroValue argument, it takes two  
+functions as arguments: a transform function for transforming values from type V to type U  
+(with the signature (U, V) => U) and a merge function for merging the transformed values  
+(with the signature (U, U) => U)
+
+`Signature(initial value)(function inside partition, function between partitions)`
+
+# Partitioning and shuffling
+## Partitioning
+Data partitioning is Spark’s mechanism for dividing data between multiple nodes in a cluster.  
+Each part (piece or slice) of an RDD is called a partition. When you load a text file from your  
+local filesystem into Spark, for example, the file’s contents are split into partitions, which are  
+evenly distributed to nodes in a cluster.  
+
+The number of RDD partitions is important because, in addition to influencing data distribution throughout the cluster,  
+it also directly determines the number of tasks that will be running RDD transformations.
+ 
+Partitioning of RDDs is performed by Partitioner objects that assign a partition index to each RDD element.  
+Two implementations are provided by Spark: `HashPartitioner` and `RangePartitioner`.  
+Pair RDDs also accept `custom partitioners`.
+
+### HashPartitioner
+`HashPartitioner` is the default partitioner in Spark.  
+
+```
+### Partition index calculation
+partitionIndex = hashCode % numberOfPartitions
+```
+
+The default number of data partitions when using HashPartitioner is determined by the Spark configuration  
+parameter `spark.default.parallelism`.  
+If that parameter isn’t specified by the user, it will be set to the number of cores in the cluster
+
+### RangePartitioner
