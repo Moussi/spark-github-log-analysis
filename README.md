@@ -171,3 +171,17 @@ data (the default is again true).
 * `spark.shuffle.spill.batchSize` specifies the number of objects that will be serialized or deserialized together when spilling to disk. The default is 10,000.  
 * `spark.shuffle.service.port` specifies the port the server will listen on if an external shuffle service is enabled.  
 
+# Repartitioning RDDs
+Repartitioning of RDDs can be accomplished with the:  
+* `partitionBy`: set a new partitioner , a shuffle is scheduled and a new RDD is created.  
+* `coalesce`: is used for either reducing or increasing the number of partition. 
+* `repartitionAndSortWithinPartition`: It’s available only on sortable RDDs (pair RDDs with sortable keys).  
+
+# Mapping data in partitions
+The last aspect of data partitioning we want to tell you about is mapping data in partitions.  
+Spark offers a way to apply a function not to an RDD as a whole, but to each of its partitions separately.  
+This can be a precious tool in optimizing your transformations. Many can be rewritten to map data in  
+partitions only, thus avoiding shuffles. RDD operations for working on partitions are `mapPartitions`,  
+`mapPartitionsWithIndex`, and `glom`, a specialized partition-mapping transformation.
+
+
