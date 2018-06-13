@@ -182,6 +182,25 @@ The last aspect of data partitioning we want to tell you about is mapping data i
 Spark offers a way to apply a function not to an RDD as a whole, but to each of its partitions separately.  
 This can be a precious tool in optimizing your transformations. Many can be rewritten to map data in  
 partitions only, thus avoiding shuffles. RDD operations for working on partitions are `mapPartitions`,  
-`mapPartitionsWithIndex`, and `glom`, a specialized partition-mapping transformation.
+`mapPartitionsWithIndex`, and `glom`, a specialized partition-mapping transformation.  
+
+Mapping partitions can help you solve some problems more efficiently than using other transformations  
+that don’t operate on partitions explicitly.  
+For example, if the mapping function involves expensive setup (such as opening a database connection),  
+it’s much better to do it once per partition than once per element.
 
 
+**Collecting partition data with a glom transformation**
+`glom` gathers elements of each partition into an array and returns a new RDD with those arrays as elements.  
+The number of elements in the new RDD is equal to the number of its partitions. The partitioner is removed in the process.
+
+```
+scala> val list = List.fill(500)(scala.util.Random.nextInt(100))
+list: List[Int] = List(88, 59, 78, 94, 34, 47, 49, 31, 84, 47, ...)
+scala> val rdd = sc.parallelize(list, 30).glom()
+rdd: org.apache.spark.rdd.RDD[Array[Int]] = MapPartitionsRDD[0]
+scala> rdd.collect()
+res0: Array[Array[Int]] = Array(Array(88, 59, 78, 94,...), ...)
+scala> rdd.count()
+res1: Long = 30
+```
